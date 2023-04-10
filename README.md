@@ -8,7 +8,7 @@ Getting random number consists of two steps: "request" and "result". Each reques
 Both steps are separated in time and executed by different transactions. There can be many random numbers requests in one transaction.
 
 ***Step 1 Request***
-Request can be done calling `_requiestRandom()` functon, returns value is unique `requestId`. Each request aims to be resolved after `responseRoundId` come.
+Request can be done calling `_requestRandom()` functon, returns value is unique `requestId`. Each request aims to be resolved after `responseRoundId` come.
 
 ***Step 2 Result***
 Result must be done calling `_fillResponse(uint256 requestId)` function. This function reads request parameter, request chainlink feed data with exact roundId. Recieved data used for getting random value and write results into request structure for use and proof.
@@ -17,7 +17,7 @@ Result must be done calling `_fillResponse(uint256 requestId)` function. This fu
 ```shell
                                                         hash(
                                                            requestId #1,
-         response at 344 (343+roundDelta)                  prce 18001.1
+         response at 344 (343+roundDelta)                  price 18001.1
          block #3                                          date 1680874160
 App      requestId #1                                      blockhash(block #3)
 Layer   _requestRandom()                                )

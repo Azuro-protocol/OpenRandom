@@ -76,12 +76,12 @@ contract OpenRandom {
     /**
      * @notice request random number
      */
-    function _requiestRandom() internal returns (uint256 requestId) {
+    function _requestRandom() internal returns (uint256 requestId) {
         requestId = nextRequestId++;
-        Request storage requests_ = requests[requestId];
-        requests_.blockNumber = uint128(block.number);
+        Request storage request = requests[requestId];
+        request.blockNumber = uint128(block.number);
         (uint80 roundId, , , , ) = feed.latestRoundData();
-        requests_.responseRoundId = roundId + roundDelta;
+        request.responseRoundId = roundId + roundDelta;
     }
 
     function _setFeed(address newfeed) internal {
@@ -96,7 +96,7 @@ contract OpenRandom {
         emit RoundDeltaChanged(newRoundDelta);
     }
 
-    function _setmaxResponse(uint256 newMaxResponse) internal {
+    function _setMaxResponse(uint256 newMaxResponse) internal {
         if (newMaxResponse == 0) revert IncorrectValue();
         maxResponse = newMaxResponse;
         emit MaxResponseChanged(newMaxResponse);

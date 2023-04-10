@@ -13,12 +13,4 @@ library FixedMath {
     function div(uint256 self, uint256 other) internal pure returns (uint256) {
         return (self * ONE) / other;
     }
-
-    /**
-     * @notice Implementation of the sigmoid function.
-     * @notice The sigmoid function is commonly used in machine learning to limit output values within a range of 0 to 1.
-     */
-    function sigmoid(uint256 self) internal pure returns (uint256) {
-        return (self * ONE) / (self + ONE);
-    }
 }

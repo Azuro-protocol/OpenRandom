@@ -41,20 +41,20 @@ contract HiLo is OwnableUpgradeable, OpenRandom, OpenLiquidity {
     function initialize(
         address token_,
         uint256 winMultiplier_,
-        address newfeed,
+        address newFeed,
         uint80 newRoundDelta,
         uint256 newMaxResponse
     ) external initializer {
         __Ownable_init_unchained();
         winMultiplier = winMultiplier_;
         _setToken(token_);
-        _setFeed(newfeed);
+        _setFeed(newFeed);
         _setRoundDelta(newRoundDelta);
-        _setmaxResponse(newMaxResponse);
+        _setMaxResponse(newMaxResponse);
     }
 
-    function changeFeed(address newfeed) external onlyOwner {
-        _setFeed(newfeed);
+    function changeFeed(address newFeed) external onlyOwner {
+        _setFeed(newFeed);
     }
 
     function changeRoundDelta(uint80 newRoundDelta) external onlyOwner {
@@ -62,15 +62,15 @@ contract HiLo is OwnableUpgradeable, OpenRandom, OpenLiquidity {
     }
 
     function changeMaxResponse(uint256 newMaxResponse) external onlyOwner {
-        _setmaxResponse(newMaxResponse);
+        _setMaxResponse(newMaxResponse);
     }
 
     function bet(bool isHigh, uint256 amount) external {
         _lockLiquidity(msg.sender, amount, winMultiplier);
 
         uint256[2] memory _requests;
-        _requests[0] = _requiestRandom();
-        _requests[1] = _requiestRandom();
+        _requests[0] = _requestRandom();
+        _requests[1] = _requestRandom();
 
         uint256 betId = nextBetId++;
 
