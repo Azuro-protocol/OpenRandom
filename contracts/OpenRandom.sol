@@ -30,11 +30,9 @@ contract OpenRandom {
 
     function getRequestResult(
         uint256 requestId
-    ) public view returns (uint256 result, bool executed, bool rejected) {
+    ) public view returns (uint256, bool, bool) {
         Request storage request = requests[requestId];
-        result = request.result;
-        executed = request.executed;
-        rejected = request.rejected;
+        return (request.result, request.executed, request.rejected);
     }
 
     /**
