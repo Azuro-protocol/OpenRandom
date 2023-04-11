@@ -82,10 +82,10 @@ contract OpenRandom {
         request.responseRoundId = roundId + roundDelta;
     }
 
-    function _setFeed(address newfeed) internal {
-        if (newfeed == address(0)) revert IncorrectAddress();
-        feed = AggregatorV3Interface(newfeed);
-        emit FeedChanged(newfeed);
+    function _setFeed(address newFeed) internal {
+        if (newFeed == address(0)) revert IncorrectAddress();
+        feed = AggregatorV3Interface(newFeed);
+        emit FeedChanged(newFeed);
     }
 
     function _setRoundDelta(uint80 newRoundDelta) internal {
