@@ -12,6 +12,7 @@ const {
   timeShiftBy,
   ADDRESSZERO,
   BET_100,
+  BET_200,
   MAXRESPONSE,
   ROUNDDELTA,
   WINMULTIPLIER,
@@ -51,14 +52,17 @@ describe("OpenRandom main tests", function () {
 
     for (const i of Array(10).keys()) {
       let betId = i;
-      await makeWithdrawPayoutCheck(hilo, ALICE, betId, HIGHER);
+      await makeWithdrawPayoutCheck(hilo, ALICE, betId, HIGHER, BET_200);
     }
 
     // try calc payout again
-    await hilo.executeBet(ALICE.address, 0);
+    await expect(hilo.executeBet(ALICE.address, 0)).to.be.revertedWithCustomError(hilo, "IncorrectRequest");
 
     // try incorrect request
-    await hilo.executeBetRequests(INCORRECTREQUEST0, INCORRECTREQUEST1);
+    await expect(hilo.executeBetRequests(INCORRECTREQUEST0, INCORRECTREQUEST1)).to.be.revertedWithCustomError(
+      hilo,
+      "IncorrectRequest"
+    );
 
     // try again
     await expect(makeWithdrawPayoutCheck(hilo, ALICE, 0, HIGHER)).to.be.revertedWithCustomError(
@@ -67,6 +71,17 @@ describe("OpenRandom main tests", function () {
     );
   });
   it("test with feed changed phase", async () => {
+    /**     
+      phase  |          1            |        2
+      -------+-----------------------+----------------
+      rounds | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+                                   
+                                   ^   ^
+                                   |   |
+ 
+                  bet betId0, betId1   |
+                                       rejected betId0, betId1
+     */
     const { hilo, aggregator, rounds, users } = await loadFixture(prepareWithUSDC);
     const ALICE = users[0];
     const HIGHER = true;
@@ -76,15 +91,26 @@ describe("OpenRandom main tests", function () {
     let requests1 = [2, 3];
 
     // pass to last round before phase change
-    await aggregator.addRoundsData(rounds.slice(0, 5));
+    await aggregator.addRoundsData(rounds.slice(0, 6));
 
+    // make bets just before phase change
     await makeBetCheck(hilo, ALICE, HIGHER, BET_100, betId0, requests0);
     await makeBetCheck(hilo, ALICE, HIGHER, BET_100, betId1, requests1);
 
-    await makeWithdrawPayoutCheck(hilo, ALICE, betId0, HIGHER);
+    // passed rounds of the new phase
+    await aggregator.addRoundsData(rounds.slice(6));
+
+    // too early check
+    await expect(makeWithdrawPayoutCheck(hilo, ALICE, betId0, HIGHER, BET_200)).to.be.revertedWithCustomError(
+      hilo,
+      "ResponseNotReady"
+    );
 
     // pass MAXRESPONSE blocks
     await blockShiftBy(ethers, MAXRESPONSE);
-    await makeWithdrawPayoutCheck(hilo, ALICE, betId1, HIGHER);
+
+    // Rejected bets, get stakes back
+    await makeWithdrawPayoutCheck(hilo, ALICE, betId0, HIGHER, BET_100);
+    await makeWithdrawPayoutCheck(hilo, ALICE, betId1, HIGHER, BET_100);
   });
 });

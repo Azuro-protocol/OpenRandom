@@ -32,6 +32,7 @@ contract HiLo is OwnableUpgradeable, OpenRandom, OpenLiquidity {
     );
 
     error PayoutAlreadyWithdrawn();
+    error ResponseNotReady();
 
     mapping(address => mapping(uint256 => BetData)) public betData;
 
@@ -109,18 +110,19 @@ contract HiLo is OwnableUpgradeable, OpenRandom, OpenLiquidity {
         if (_bet.isPaid) return (payout, results);
 
         uint256 result_;
-        bool executed_;
-        bool rejected_;
+        States state;
         uint256 requestId;
         for (uint256 i = 0; i < 2; ++i) {
             requestId = _bet.requests[i];
-            (result_, executed_, rejected_) = getRequestResult(requestId);
+            (result_, state) = getRequestResult(requestId);
 
-            if (rejected_) return (_bet.amount, results);
-            if (!executed_) {
-                _fillResponse(_bet.requests[i]);
-                (result_, , ) = getRequestResult(requestId);
+            if (state == States.NEW) {
+                if (!_fillResponse(_bet.requests[i])) revert ResponseNotReady();
+                (result_, state) = getRequestResult(requestId);
             }
+
+            if (state == States.REJECTED) return (_bet.amount, results);
+
             results[i] = result_ % 52;
             _bet.results[i] = results[i];
         }

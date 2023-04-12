@@ -12,6 +12,7 @@ const MINTABLEAMOUNTUSDC = tokensDec(1_000_000, 6);
 const ADDRESSZERO = ethers.constants.AddressZero;
 const INITVALUE = tokensDec(100_000, 6);
 const BET_100 = tokensDec(100, 6);
+const BET_200 = tokensDec(200, 6);
 
 async function addLiquidity(hilo, user, amount) {
   await hilo.connect(user).addLiquidity(amount);
@@ -68,7 +69,7 @@ async function deployAndFillAggregatorMock() {
 
   let time = await getBlockTime(ethers);
 
-  // fill up mock with changing phase
+  // fill up mock with changing phase (phase 1 - 6 rounds, phase 2 - 4 rounds)
   let rounds = [
     {
       answer: 2234470290000,
@@ -106,28 +107,29 @@ async function deployAndFillAggregatorMock() {
       updatedAt: time + 6 * ROUNDSHIFT,
       answeredInRound: "36893488147423572312",
     },
+    // <----------- new phase ---------------->
     {
       answer: 2234440000000,
       startedAt: 0,
-      updatedAt: time + 6 * ROUNDSHIFT,
+      updatedAt: time + 7 * ROUNDSHIFT,
       answeredInRound: "55340232221128654848",
     },
     {
       answer: 2234500000000,
       startedAt: 0,
-      updatedAt: time + 6 * ROUNDSHIFT,
+      updatedAt: time + 8 * ROUNDSHIFT,
       answeredInRound: "55340232221128654849",
     },
     {
       answer: 2234040000000,
       startedAt: 0,
-      updatedAt: time + 6 * ROUNDSHIFT,
+      updatedAt: time + 9 * ROUNDSHIFT,
       answeredInRound: "55340232221128654850",
     },
     {
       answer: 2234010000000,
       startedAt: 0,
-      updatedAt: time + 6 * ROUNDSHIFT,
+      updatedAt: time + 10 * ROUNDSHIFT,
       answeredInRound: "55340232221128654851",
     },
   ];
@@ -194,12 +196,13 @@ async function makeWithdrawPayout(hilo, user, betId) {
   };
 }
 
-async function makeWithdrawPayoutCheck(hilo, user, betId, isHigh) {
+async function makeWithdrawPayoutCheck(hilo, user, betId, isHigh, expected) {
   let res = await makeWithdrawPayout(hilo, user, betId);
   expect(res.account).to.be.eq(user.address);
   expect(res.betId).to.be.eq(betId);
+  // if won got prize or if rejected got back stake
   if ((isHigh && res.results[0].gte(res.results[1])) || (!isHigh && res.results[0].lt(res.results[1]))) {
-    expect(res.amount).to.be.gt(BIGZERO);
+    expect(res.amount).to.be.eq(expected);
   } else {
     expect(res.amount).to.be.eq(BIGZERO);
   }
@@ -253,6 +256,7 @@ module.exports = {
   timeShiftBy,
   ADDRESSZERO,
   BET_100,
+  BET_200,
   MAXRESPONSE,
   ROUNDDELTA,
   WINMULTIPLIER,

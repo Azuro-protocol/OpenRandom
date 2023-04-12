@@ -4,12 +4,17 @@ pragma solidity 0.8.17;
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 contract OpenRandom {
+    enum States {
+        NEW,
+        EXECUTED,
+        REJECTED
+    }
+
     struct Request {
         uint256 result;
         uint128 blockNumber;
         uint80 responseRoundId;
-        bool executed;
-        bool rejected;
+        States state;
     }
 
     event FeedChanged(address indexed feed);
@@ -18,6 +23,7 @@ contract OpenRandom {
 
     error IncorrectAddress();
     error IncorrectValue();
+    error IncorrectRequest();
 
     mapping(uint256 => Request) public requests;
 
@@ -30,35 +36,42 @@ contract OpenRandom {
 
     function getRequestResult(
         uint256 requestId
-    ) public view returns (uint256, bool, bool) {
+    ) public view returns (uint256, States) {
         Request storage request = requests[requestId];
-        return (request.result, request.executed, request.rejected);
+        return (request.result, request.state);
     }
 
     /**
      * @notice response to a pending request
+     * @param requestId to fill up response
+     * @return filled returns 
+               true - if request filled (executed or rejected)
+               false - too early for response (try later)
      */
-    function _fillResponse(uint256 requestId) internal {
+    function _fillResponse(uint256 requestId) internal returns (bool) {
         Request storage request = requests[requestId];
         uint128 requestBlock = request.blockNumber;
 
         // no request or executed
-        if (requestBlock == 0 || request.executed) return;
+        if (requestBlock == 0 || request.state != States.NEW)
+            revert IncorrectRequest();
 
         (, int256 answer, , uint256 updatedAt, ) = feed.getRoundData(
             request.responseRoundId
         );
 
-        // no feed data (too early or feed phase changed)
+        // no feed data
         if (updatedAt == 0) {
+            // feed not responded or next phase
             if (block.number > requestBlock + maxResponse) {
-                request.executed = true;
-                request.rejected = true;
+                request.state = States.REJECTED;
+                return true;
             }
-            return;
+            // too early (try later)
+            return false;
         }
 
-        request.executed = true;
+        request.state = States.EXECUTED;
         request.result = uint256(
             keccak256(
                 abi.encode(
@@ -69,6 +82,7 @@ contract OpenRandom {
                 )
             )
         );
+        return true;
     }
 
     /**
